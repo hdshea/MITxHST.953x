@@ -1,18 +1,11 @@
-#' ---
-#' title: "SQLite and MIMIC3 specific function library"
-#' author: "H. David Shea"
-#' date: "`r format(Sys.time(), '%d %b %Y')`"
-#' output: github_document
-#' ---
-#'
-#+ r setup, include = FALSE
-library(DBI)
-library(RSQLite)
-library(tidyverse)
-#+
+SQLite and MIMIC3 specific function library
+================
+H. David Shea
+29 Jun 2021
 
-#' Connect to the MIMIC3 database - for testing code only
-#'
+Connect to the MIMIC3 database - for testing code only
+
+``` r
 # base_dir <- here::here("")
 # db_file <- fs::path(base_dir, "database/mimic3.db")
 # if(dbCanConnect(RSQLite::SQLite(), db_file)) {
@@ -20,9 +13,11 @@ library(tidyverse)
 # } else {
 #     stop(str_c("Database file: ", db_file, " not found.", sep=""))
 # }
+```
 
-#' Basic SELECT statement wrapper returning results in a tibble
-#'
+Basic SELECT statement wrapper returning results in a tibble
+
+``` r
 db_select_data <- function(con, select_statement ) {
     res <- dbSendQuery(con, select_statement)
     rval <- tibble::tibble(dbFetch(res)) ##%>%
@@ -31,15 +26,19 @@ db_select_data <- function(con, select_statement ) {
     rm(res)
     rval
 }
+```
 
-#' Simple generic SELECT from base tables
-#'
+Simple generic SELECT from base tables
+
+``` r
 db_get_from_table <- function(con, table, where = NULL) {
     db_select_data(con, str_c("SELECT * FROM", table, where, sep = " ") )
 }
+```
 
-#' Simple table specific SELECTs from base tables
-#'
+Simple table specific SELECTs from base tables
+
+``` r
 db_get_admissions <- function(con, ...) {
     db_get_from_table(con, "admissions", ...)
 }
@@ -143,3 +142,4 @@ db_get_services <- function(con, ...) {
 db_get_transfers <- function(con, ...) {
     db_get_from_table(con, "transfers", ...)
 }
+```
