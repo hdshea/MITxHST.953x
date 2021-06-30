@@ -1,3 +1,10 @@
+not_for_git/
+database/mimic3.db
+rawdata/*.csv
+rawdata/*.csv.gz
+rawdata/*.txt
+rawdata/*.md
+
 # History files
 .Rhistory
 .Rapp.history
