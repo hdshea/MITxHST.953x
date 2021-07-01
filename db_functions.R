@@ -23,19 +23,24 @@ library(tidyverse)
 
 #' Basic SELECT statement wrapper returning results in a tibble
 #'
-db_select_data <- function(con, select_statement ) {
+db_select_data <- function(con, select_statement) {
     res <- dbSendQuery(con, select_statement)
-    rval <- tibble::tibble(dbFetch(res)) ##%>%
-        ##mutate(across(contains("_date"), as.Date))
+    rval <- tibble::tibble(dbFetch(res))
     dbClearResult(res)
     rm(res)
     rval
 }
 
 #' Simple generic SELECT from base tables
+#' - note that we do some internal processing to reflect general usage patterns
 #'
 db_get_from_table <- function(con, table, where = NULL) {
-    db_select_data(con, str_c("SELECT * FROM", table, where, sep = " ") )
+    db_select_data(con, str_c("SELECT * FROM", table, where, sep = " ")) %>%
+    select(-ROW_ID)  %>%  # default to removing the ROW_ID internal primary key
+        mutate(
+            across(ends_with("DATE"), as.Date),  # all columns ending in DATE convert to R Date type
+            across(ends_with("TIME"), as.Date)   # all columns ending in TIME convert to R Date type
+        )
 }
 
 #' Simple table specific SELECTs from base tables
@@ -44,12 +49,12 @@ db_get_admissions <- function(con, ...) {
     db_get_from_table(con, "admissions", ...)
 }
 
-db_get_callouts <- function(con, ...) {
-    db_get_from_table(con, "callouts", ...)
+db_get_callout <- function(con, ...) {
+    db_get_from_table(con, "callout", ...)
 }
 
 db_get_caregivers <- function(con, ...) {
-    db_get_from_table(con, "cargivers", ...)
+    db_get_from_table(con, "caregivers", ...)
 }
 
 db_get_chartevents <- function(con, ...) {
@@ -61,11 +66,12 @@ db_get_cptevents <- function(con, ...) {
 }
 
 db_get_datetimeevents <- function(con, ...) {
-    db_get_from_table(con, "datetimeevents", ...)
+    db_get_from_table(con, "datetimeevents", ...)  %>%
+        mutate(VALUE = as.Date(VALUE)) # VALUE column in DATETIMEEVENTS is a DATE
 }
 
-db_get_diagnosis_icd <- function(con, ...) {
-    db_get_from_table(con, "diagnosis_icd", ...)
+db_get_diagnoses_icd <- function(con, ...) {
+    db_get_from_table(con, "diagnoses_icd", ...)
 }
 
 db_get_drgcodes <- function(con, ...) {
@@ -76,8 +82,8 @@ db_get_d_cpt <- function(con, ...) {
     db_get_from_table(con, "d_cpt", ...)
 }
 
-db_get_d_diagnoses <- function(con, ...) {
-    db_get_from_table(con, "d_diagnoses", ...)
+db_get_d_icd_diagnoses <- function(con, ...) {
+    db_get_from_table(con, "d_icd_diagnoses", ...)
 }
 
 db_get_d_icd_procedures <- function(con, ...) {
@@ -117,11 +123,17 @@ db_get_noteevents <- function(con, ...) {
 }
 
 db_get_outputevents <- function(con, ...) {
-    db_get_from_table(con, "noteevents", ...)
+    db_get_from_table(con, "outputevents", ...)
 }
 
 db_get_patients <- function(con, ...) {
-    db_get_from_table(con, "patients", ...)
+    db_get_from_table(con, "patients", ...)  %>%
+        mutate(
+            DOB = as.Date(DOB),
+            DOD = as.Date(DOD),
+            DOD_HOSP = as.Date(DOD_HOSP),
+            DOD_SSN = as.Date(DOD_SSN)
+        ) # DOB and DOD... columns in PATIENTS are DATEs
 }
 
 db_get_prescriptions <- function(con, ...) {

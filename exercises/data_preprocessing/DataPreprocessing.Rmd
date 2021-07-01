@@ -1,0 +1,152 @@
+---
+title: "Data Preprocessing"
+author: "H. David Shea"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output:
+  html_document:
+    fig.align: center
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 9
+    highlight: tango
+    theme: united
+    #toc: yes
+  pdf_document:
+    #toc: yes
+---
+
+(Note:  Updated and modified from the hst953-edx github version.)
+
+
+```{r setup, include=FALSE}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+
+knitr::opts_chunk$set(
+    connection = "mimic3", # automatically uses this connection in sql chunks 
+    comment = "#>", 
+    collapse = TRUE, 
+    message = FALSE,
+    fig.width = 8,
+    fig.asp = ((1 + sqrt(5)) / 2) - 1, # the golden ratio - technically, the b proportion of a+b when a is 1
+    out.width = "70%",
+    fig.align = "center"
+)
+```
+
+# Source MIMIC-III demo version data
+
+In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded.  Now, I have in <project_base_dir>/database/mimic3.db the SQLite version of the full MIMIC-III 1.4 database loaded.  I'll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data.  The following code chunk attaches the database and loads auxiliary functions for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`) - including the processing to get just the demo data.
+
+```{r source_aux_functions, include=TRUE}
+base_dir <- here::here("")
+db_dir <- fs::path(base_dir, "database")
+db_file <- fs::path(db_dir, "mimic3.db")
+
+if(dbCanConnect(RSQLite::SQLite(), db_file)) {
+    mimic3 <- dbConnect(RSQLite::SQLite(), db_file)
+}
+
+source(fs::path(base_dir, "db_functions.R"))
+source(fs::path(base_dir, "mimic3_meta_data.R"))
+```
+
+# Data integration
+
+## Exercise
+
+Aim: This exercise involves combining the separate output datasets exported from separate MIMIC queries into a consistent larger dataset table.
+
+To ensure that the associated observations or rows from the different datasets match up, the right column ID must be used. For example, in MIMIC `SUBJECT_ID` is used to identify each individual patient, so includes their date of birth (DOB), date of death (DOD) and various other clinical detail and laboratory values. Likewise, the hospital admission ID - `HADM_ID` - is used to specifically identify various events and outcomes from an unique hospital admission; and is also in turn associated with the `SUBJECT_ID` of the patient who was involved in that particular hospital admission. Tables pulled from MIMIC can have one or more ID columns. The different tables exported from MIMIC may share some ID columns, which allows us to 'merge' them together, matching up the rows correctly using the unique ID values in their shared ID columns.
+
+To demonstrate this with MIMIC data, some base extraction routines are used to extract some data from the  `ADMISSIONS` and `ICUSTAYS` tables.  We will use these extracted files to show how to merge datasets in R.
+
+1. Base data extractions:
+
+```{r message=FALSE, warning=FALSE}
+adm <- db_get_admissions(mimic3, where = demo_subject_ids)
+
+str(adm)
+
+icu <- db_get_icustays(mimic3, where = demo_subject_ids)
+
+str(icu)
+```
+
+These base data extraction routines use R's `DBI` package interface to execute SQL statements and pull back data in nicely formatted tibbles.
+
+2. R code: Demonstrating data integration
+
+Merging `ADMISSIONS` and `ICUSTAYS`: to get the rows to match up correctly, we need to merge on both the `SUBJECT_ID` and `HADM_ID`. This is because each subject/patient could have multiple `HADM_ID` from different hospital `ADMISSIONS` during the EHR course of the MIMIC database.
+
+(Note:  in this updated version, I have switched to using the `tidyverse` package relational wrangling techniques instead of the older base `merge` function.)
+
+```{r message=FALSE, warning=FALSE}
+icu_adm <- adm %>% 
+  left_join(icu, by = c("SUBJECT_ID", "HADM_ID"))
+
+str(icu_adm)
+```
+
+Note: in the same way each subject/patient could have multiple `HADM_ID` from different hospital admissions during the EHR course of the MIMIC database, each `HADM_ID` can have multiple `ICUSTAY_ID`.
+
+# Data transformation
+
+## Exercise
+
+Aim: To transform the presentation of data values in some ways so that the new format is more suitable for the subsequent statistical analysis. The main processes involved are normalization, aggregation and generalization.
+
+1. Base data extractions:
+
+This extraction relies on a (very complicated) view that was provided with the original course material on the github site for the course.  As such, it uses a lower level database routine for extraction.
+
+The view uses data from the `DIAGNOSES_ICD`, `DRGCODES` and `ADMISSIONS` tables to implement a version of the Elixhauser Comorbidity Index.  The Elixhauser Comorbidity Index is a method of categorizing comorbidities of patients based on the International Classification of Diseases (ICD) diagnosis codes.
+
+```{r message=FALSE, warning=FALSE}
+Elixhauser <- db_select_data(mimic3, "SELECT * FROM ELIXHAUSER_AHRQ")
+
+str(Elixhauser)
+```
+
+Note the total number of rows (obs) and columns (variables) in `Elixhauser` tibble results.
+
+2. R code: Demonstrating data transformation
+
+### Aggregation and Normalization steps
+
+Here we `mutate` the `Elixhauser` tibble to add an `OVERALL_SCORE` column which is the sum of all of the co-morbidity values, and a normalized value - `OVERALL_NML` - of each observation's `OVERALL_SCORE` divided by the maximum `OVERALL_SCORE` for the sample.
+
+(Note: in this updated version, the aggregation and normalization are done in a single `mutate` rather than a series of base R steps.)
+
+```{r message=FALSE, warning=FALSE}
+Elixhauser <- Elixhauser %>% 
+  mutate(
+    OVERALL_SCORE = rowSums(select(., CONGESTIVE_HEART_FAILURE:DEPRESSION)),
+    OVERALL_NML = OVERALL_SCORE/max(OVERALL_SCORE)
+  )
+
+str(Elixhauser)
+```
+
+### Generalization Step
+
+Aim: Consider only the group of patients sicker than the average Elixhauser score.  Here, we will create a new tibble `Elixhauser_sicker_sample` of those subjects from the whole sample who have an `OVERALL_NML` value >= 0.5 - the sickest half of the population based on number of morbidity indications.  For this tibble, we will keep the `SUBJECT_ID`, `HADM_ID`, and `OVERAL_NML` values only.  We will save that to the CSV file:  `sicker_sample.csv`
+
+```{r message=FALSE, warning=FALSE}
+Elixhauser_sicker_sample <- Elixhauser %>% 
+  filter(OVERALL_NML >= 0.5) %>% 
+  select(SUBJECT_ID, HADM_ID, OVERALL_NML)
+
+str(Elixhauser_sicker_sample)
+
+write.csv(Elixhauser_sicker_sample,
+          fs::path(base_dir, "exercises/data_preprocessing/Elixhauser_sicker_sample.csv"), row.names = FALSE)
+```
+
+TBC...
+
+
+```{r finish, include=FALSE}
+dbDisconnect(mimic3)
+```
