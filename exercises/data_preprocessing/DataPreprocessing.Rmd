@@ -22,6 +22,7 @@ output:
 library(DBI)
 library(RSQLite)
 library(tidyverse)
+library(splitstackshape)
 
 knitr::opts_chunk$set(
     connection = "mimic3", # automatically uses this connection in sql chunks 
@@ -37,7 +38,7 @@ knitr::opts_chunk$set(
 
 # Source MIMIC-III demo version data
 
-In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded.  Now, I have in <project_base_dir>/database/mimic3.db the SQLite version of the full MIMIC-III 1.4 database loaded.  I'll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data.  The following code chunk attaches the database and loads auxiliary functions for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`) - including the processing to get just the demo data.
+In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded.  Now, I have in *project_base_dir*/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded.  I'll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data.  The following code chunk attaches the database and loads auxiliary functions for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`) - including the processing to get just the demo data.
 
 ```{r source_aux_functions, include=TRUE}
 base_dir <- here::here("")
@@ -144,8 +145,108 @@ write.csv(Elixhauser_sicker_sample,
           fs::path(base_dir, "exercises/data_preprocessing/Elixhauser_sicker_sample.csv"), row.names = FALSE)
 ```
 
-TBC...
+# Data reduction
 
+## Exercise
+
+Aim: To reduce or reshape the input data by means of a more effective representation of the dataset without compromising the integrity of the original data. One element of data reduction is eliminating redundant records while preserving needed data, which we will demonstrate in Part 1. The other element involves reshaping the dataset into a "tidy" format, which we will demonstrate in Part 2.
+
+### Part 1: Eliminating Redundant Records
+
+To demonstrate this with an example, we will look at multiple records of glucose laboratory values for each patient.  This query selects all the non-null measurements of glucose values for all the patients in the MIMIC database.
+
+(Note:  I was not sure if - in the original course example - they used the demo database or the full database for this analyses, so I went with the full database.  That will be my default from now on unless it is otherwise specified in the older Rmarkdown code.)
+
+1. Base data extractions:
+
+```{r message=FALSE, warning=FALSE}
+where <- "WHERE (itemid = 50931 OR itemid = 50809)  
+          AND   valuenum IS NOT null
+          AND   hadm_id IS NOT null"
+all_glucose <- db_get_labevents(mimic3, where = where)
+
+str(all_glucose)
+```
+
+2. R code: Demonstrating data reduction
+
+There are a variety of methods that can be chosen to aggregate records. In this case we will look at averaging multiple glucose records into a single average glucose for each patient. Other options which may be chosen include using the first recorded value, a minimum or maximum value, etc. For a basic example, the following code demonstrates data reduction by averaging all of the multiple records of glucose into a single record per patient hospital admission. The code uses the `tidyverse` package functions `group_by` and `aggregate` to calculate average glucose values for each distinct `HADM_ID`:
+
+```{r message=FALSE, warning=FALSE}
+avg_glucose <- all_glucose %>% 
+    arrange(HADM_ID, SUBJECT_ID) %>%
+    group_by(HADM_ID, SUBJECT_ID) %>%
+    summarize(
+      VALUENUM = mean(VALUENUM, na.rm = TRUE)
+    )
+
+avg_glucose
+```
+
+### Part 2: Reshaping Dataset
+
+Ideally, we want a "tidy" dataset reorganized in such a way so it follows these 3 rules:
+
+* 1. Each variable forms a column
+* 2. Each observation forms a row
+* 3. Each value has its own cell
+
+Datasets exported from MIMIC usually are fairly "tidy" already. Therefore, we will construct our own data frame here for ease of demonstration for rule 3. We will also demonstrate how to use some common data tidying packages.
+
+R code: To mirror our own MIMIC dataframe, we construct a dataset with a column of `subject_id` and a column with a list of `diagnoses` for the admission.
+
+(Note:  this versions of the code is from the original with only slight modifications.)
+
+```{r message=FALSE, warning=FALSE}
+diag <- data.frame(subject_id = 1:6, diagnosis = c("PNA, CHF", "DKA", "DKA, UTI", "AF, CHF", "AF", "CHF"))
+
+diag
+```
+
+Note that the dataset above is not "tidy". There are multiple categorical variables in column "diagnosis" - breaks "tidy" data rule 1. There are multiple values in column "diagnosis" - breaks "tidy" data rule 3. There are many ways to "tidy" and reshape this dataset. We will show one way to do this by making use of R packages "splitstackshape" and "tidyr" to make reshaping the dataset easier.
+
+#### R package example 1 - `splitstackshape` package functions:
+
+The function, `cSplit` from the `splitstackshape` package, can split the multiple categorical values in each cell of column `diagnosis` into different columns, `diagnosis_1` and `diagnosis_2`. If the argument, direction, for `cSplit` is not specified, then the function splits the original dataset "wide".
+
+```{r message=FALSE, warning=FALSE}
+diag2 <- cSplit(diag, "diagnosis", ",")
+
+diag2
+```
+
+One could possibly keep it as this if one is interested in primary and secondary diagnoses (though it is not strictly "tidy" yet). Alternatively, if the direction argument is specified as "long", then `cSplit` splits the function "long" like so:
+
+```{r message=FALSE, warning=FALSE}
+diag3 <- cSplit(diag, "diagnosis", ",", direction = "long")
+
+diag3
+```
+
+Note diag3 is still not "tidy" as there are still multiple categorical variables under
+column diagnosis-but we no longer have multiple values per cell. 
+
+#### R package example 2 - `tidyr` package functions:
+
+To further "tidy" the dataset, package `tidyr` is pretty useful.
+
+The aim is to split each categorical variable under column `diagnosis` into their own columns with 1 = having the diagnosis and 0 = not having the diagnosis. To do this we first construct a third column, `yes`, that hold all the 1 values initially (because the function we are going to use requires a value column that corresponds to the multiple categories column we want to 'spread' out).
+
+```{r message=FALSE, warning=FALSE}
+diag3$yes <- rep(1, nrow(diag3))
+
+diag3
+```
+
+Then we can use the `spread` function to split each categorical variables into their own columns. The argument, fill = 0, replaces the missing values.
+
+```{r message=FALSE, warning=FALSE}
+diag4 <- spread(diag3, diagnosis, yes, fill = 0)
+
+diag4
+```
+
+One can see that this dataset is now "tidy", as it follows all three "tidy" data rules.
 
 ```{r finish, include=FALSE}
 dbDisconnect(mimic3)

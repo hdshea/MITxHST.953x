@@ -11,7 +11,7 @@
 
 <meta name="author" content="H. David Shea" />
 
-<meta name="date" content="2021-07-01" />
+<meta name="date" content="2021-07-02" />
 
 <title>Data Preprocessing</title>
 
@@ -249,7 +249,7 @@ pre code {
 
 <h1 class="title toc-ignore">Data Preprocessing</h1>
 <h4 class="author">H. David Shea</h4>
-<h4 class="date">01 Jul 2021</h4>
+<h4 class="date">02 Jul 2021</h4>
 
 </div>
 
@@ -257,7 +257,7 @@ pre code {
 <p>(Note: Updated and modified from the hst953-edx github version.)</p>
 <div id="source-mimic-iii-demo-version-data" class="section level1">
 <h1>Source MIMIC-III demo version data</h1>
-<p>In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded. Now, I have in <project_base_dir>/database/mimic3.db the SQLite version of the full MIMIC-III 1.4 database loaded. I’ll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data. The following code chunk attaches the database and loads auxiliary functions for extracting database data (<code>db_functions.R</code>) and for doing some MIMIC data interpretation and pre-processing (<code>mimic3_meta_data.R</code>) - including the processing to get just the demo data.</p>
+<p>In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded. Now, I have in <em>project_base_dir</em>/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded. I’ll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data. The following code chunk attaches the database and loads auxiliary functions for extracting database data (<code>db_functions.R</code>) and for doing some MIMIC data interpretation and pre-processing (<code>mimic3_meta_data.R</code>) - including the processing to get just the demo data.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>base_dir <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>db_dir <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;database&quot;</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>db_file <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(db_dir, <span class="st">&quot;mimic3.db&quot;</span>)</span>
@@ -470,7 +470,151 @@ pre code {
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(Elixhauser_sicker_sample,</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;exercises/data_preprocessing/Elixhauser_sicker_sample.csv&quot;</span>), <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
-<p>TBC…</p>
+</div>
+</div>
+</div>
+<div id="data-reduction" class="section level1">
+<h1>Data reduction</h1>
+<div id="exercise-2" class="section level2">
+<h2>Exercise</h2>
+<p>Aim: To reduce or reshape the input data by means of a more effective representation of the dataset without compromising the integrity of the original data. One element of data reduction is eliminating redundant records while preserving needed data, which we will demonstrate in Part 1. The other element involves reshaping the dataset into a “tidy” format, which we will demonstrate in Part 2.</p>
+<div id="part-1-eliminating-redundant-records" class="section level3">
+<h3>Part 1: Eliminating Redundant Records</h3>
+<p>To demonstrate this with an example, we will look at multiple records of glucose laboratory values for each patient. This query selects all the non-null measurements of glucose values for all the patients in the MIMIC database.</p>
+<p>(Note: I was not sure if - in the original course example - they used the demo database or the full database for this analyses, so I went with the full database. That will be my default from now on unless it is otherwise specified in the older Rmarkdown code.)</p>
+<ol style="list-style-type: decimal">
+<li>Base data extractions:</li>
+</ol>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>where <span class="ot">&lt;-</span> <span class="st">&quot;WHERE (itemid = 50931 OR itemid = 50809)  </span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="st">          AND   valuenum IS NOT null</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="st">          AND   hadm_id IS NOT null&quot;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>all_glucose <span class="ot">&lt;-</span> <span class="fu">db_get_labevents</span>(mimic3, <span class="at">where =</span> where)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(all_glucose)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; tibble [788,730 × 8] (S3: tbl_df/tbl/data.frame)</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ SUBJECT_ID: int [1:788730] 3 3 3 3 3 3 6 6 6 6 ...</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HADM_ID   : int [1:788730] 145834 145834 145834 145834 145834 145834 107064 107064 107064 107064 ...</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ITEMID    : int [1:788730] 50809 50809 50809 50809 50809 50809 50809 50809 50809 50809 ...</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ CHARTTIME : Date[1:788730], format: &quot;2101-10-20&quot; &quot;2101-10-20&quot; ...</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ VALUE     : chr [1:788730] &quot;265&quot; &quot;267&quot; &quot;299&quot; &quot;294&quot; ...</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ VALUENUM  : num [1:788730] 265 267 299 294 140 128 106 146 151 145 ...</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ VALUEUOM  : chr [1:788730] &quot;mg/dL&quot; &quot;mg/dL&quot; &quot;mg/dL&quot; &quot;mg/dL&quot; ...</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ FLAG      : chr [1:788730] &quot;abnormal&quot; &quot;abnormal&quot; &quot;abnormal&quot; &quot;abnormal&quot; ...</span></span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li>R code: Demonstrating data reduction</li>
+</ol>
+<p>There are a variety of methods that can be chosen to aggregate records. In this case we will look at averaging multiple glucose records into a single average glucose for each patient. Other options which may be chosen include using the first recorded value, a minimum or maximum value, etc. For a basic example, the following code demonstrates data reduction by averaging all of the multiple records of glucose into a single record per patient hospital admission. The code uses the <code>tidyverse</code> package functions <code>group_by</code> and <code>aggregate</code> to calculate average glucose values for each distinct <code>HADM_ID</code>:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>avg_glucose <span class="ot">&lt;-</span> all_glucose <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(HADM_ID, SUBJECT_ID) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(HADM_ID, SUBJECT_ID) <span class="sc">%&gt;%</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">VALUENUM =</span> <span class="fu">mean</span>(VALUENUM, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>avg_glucose</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 50,653 x 3</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # Groups:   HADM_ID [50,653]</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    HADM_ID SUBJECT_ID VALUENUM</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;      &lt;int&gt;    &lt;dbl&gt;</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  1  100001      58526    165. </span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  2  100003      54610     96.8</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  3  100006       9895    105  </span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  4  100007      23018    118. </span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  5  100009        533    152. </span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  6  100010      55853    112. </span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  7  100011      87977    132. </span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  8  100012      60039    111. </span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  9  100016      68591     81.8</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10  100017      16229     77  </span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 50,643 more rows</span></span></code></pre></div>
+</div>
+<div id="part-2-reshaping-dataset" class="section level3">
+<h3>Part 2: Reshaping Dataset</h3>
+<p>Ideally, we want a “tidy” dataset reorganized in such a way so it follows these 3 rules:</p>
+<ul>
+<li><ol style="list-style-type: decimal">
+<li>Each variable forms a column</li>
+</ol></li>
+<li><ol start="2" style="list-style-type: decimal">
+<li>Each observation forms a row</li>
+</ol></li>
+<li><ol start="3" style="list-style-type: decimal">
+<li>Each value has its own cell</li>
+</ol></li>
+</ul>
+<p>Datasets exported from MIMIC usually are fairly “tidy” already. Therefore, we will construct our own data frame here for ease of demonstration for rule 3. We will also demonstrate how to use some common data tidying packages.</p>
+<p>R code: To mirror our own MIMIC dataframe, we construct a dataset with a column of <code>subject_id</code> and a column with a list of <code>diagnoses</code> for the admission.</p>
+<p>(Note: this versions of the code is from the original with only slight modifications.)</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>diag <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">subject_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">diagnosis =</span> <span class="fu">c</span>(<span class="st">&quot;PNA, CHF&quot;</span>, <span class="st">&quot;DKA&quot;</span>, <span class="st">&quot;DKA, UTI&quot;</span>, <span class="st">&quot;AF, CHF&quot;</span>, <span class="st">&quot;AF&quot;</span>, <span class="st">&quot;CHF&quot;</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>diag</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   subject_id diagnosis</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1          1  PNA, CHF</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2          2       DKA</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3          3  DKA, UTI</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4          4   AF, CHF</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5          5        AF</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6          6       CHF</span></span></code></pre></div>
+<p>Note that the dataset above is not “tidy”. There are multiple categorical variables in column “diagnosis” - breaks “tidy” data rule 1. There are multiple values in column “diagnosis” - breaks “tidy” data rule 3. There are many ways to “tidy” and reshape this dataset. We will show one way to do this by making use of R packages “splitstackshape” and “tidyr” to make reshaping the dataset easier.</p>
+<div id="r-package-example-1---splitstackshape-package-functions" class="section level4">
+<h4>R package example 1 - <code>splitstackshape</code> package functions:</h4>
+<p>The function, <code>cSplit</code> from the <code>splitstackshape</code> package, can split the multiple categorical values in each cell of column <code>diagnosis</code> into different columns, <code>diagnosis_1</code> and <code>diagnosis_2</code>. If the argument, direction, for <code>cSplit</code> is not specified, then the function splits the original dataset “wide”.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>diag2 <span class="ot">&lt;-</span> <span class="fu">cSplit</span>(diag, <span class="st">&quot;diagnosis&quot;</span>, <span class="st">&quot;,&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>diag2</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    subject_id diagnosis_1 diagnosis_2</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:          1         PNA         CHF</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:          2         DKA        &lt;NA&gt;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:          3         DKA         UTI</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4:          4          AF         CHF</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5:          5          AF        &lt;NA&gt;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6:          6         CHF        &lt;NA&gt;</span></span></code></pre></div>
+<p>One could possibly keep it as this if one is interested in primary and secondary diagnoses (though it is not strictly “tidy” yet). Alternatively, if the direction argument is specified as “long”, then <code>cSplit</code> splits the function “long” like so:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>diag3 <span class="ot">&lt;-</span> <span class="fu">cSplit</span>(diag, <span class="st">&quot;diagnosis&quot;</span>, <span class="st">&quot;,&quot;</span>, <span class="at">direction =</span> <span class="st">&quot;long&quot;</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>diag3</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    subject_id diagnosis</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:          1       PNA</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:          1       CHF</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:          2       DKA</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4:          3       DKA</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5:          3       UTI</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6:          4        AF</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7:          4       CHF</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8:          5        AF</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9:          6       CHF</span></span></code></pre></div>
+<p>Note diag3 is still not “tidy” as there are still multiple categorical variables under column diagnosis-but we no longer have multiple values per cell.</p>
+</div>
+<div id="r-package-example-2---tidyr-package-functions" class="section level4">
+<h4>R package example 2 - <code>tidyr</code> package functions:</h4>
+<p>To further “tidy” the dataset, package <code>tidyr</code> is pretty useful.</p>
+<p>The aim is to split each categorical variable under column <code>diagnosis</code> into their own columns with 1 = having the diagnosis and 0 = not having the diagnosis. To do this we first construct a third column, <code>yes</code>, that hold all the 1 values initially (because the function we are going to use requires a value column that corresponds to the multiple categories column we want to ‘spread’ out).</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>diag3<span class="sc">$</span>yes <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(diag3))</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>diag3</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    subject_id diagnosis yes</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:          1       PNA   1</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:          1       CHF   1</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:          2       DKA   1</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4:          3       DKA   1</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5:          3       UTI   1</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6:          4        AF   1</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7:          4       CHF   1</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8:          5        AF   1</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9:          6       CHF   1</span></span></code></pre></div>
+<p>Then we can use the <code>spread</code> function to split each categorical variables into their own columns. The argument, fill = 0, replaces the missing values.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>diag4 <span class="ot">&lt;-</span> <span class="fu">spread</span>(diag3, diagnosis, yes, <span class="at">fill =</span> <span class="dv">0</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>diag4</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    subject_id AF CHF DKA PNA UTI</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:          1  0   1   0   1   0</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:          2  0   0   1   0   0</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:          3  0   0   1   0   1</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4:          4  1   1   0   0   0</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5:          5  1   0   0   0   0</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6:          6  0   1   0   0   0</span></span></code></pre></div>
+<p>One can see that this dataset is now “tidy”, as it follows all three “tidy” data rules.</p>
+</div>
 </div>
 </div>
 </div>
