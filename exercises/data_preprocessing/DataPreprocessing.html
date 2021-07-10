@@ -11,7 +11,7 @@
 
 <meta name="author" content="H. David Shea" />
 
-<meta name="date" content="2021-07-02" />
+<meta name="date" content="2021-07-10" />
 
 <title>Data Preprocessing</title>
 
@@ -249,7 +249,7 @@ pre code {
 
 <h1 class="title toc-ignore">Data Preprocessing</h1>
 <h4 class="author">H. David Shea</h4>
-<h4 class="date">02 Jul 2021</h4>
+<h4 class="date">10 Jul 2021</h4>
 
 </div>
 
@@ -285,9 +285,9 @@ pre code {
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; tibble [129 × 18] (S3: tbl_df/tbl/data.frame)</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ SUBJECT_ID          : int [1:129] 10006 10011 10013 10017 10019 10026 10027 10029 10032 10033 ...</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HADM_ID             : int [1:129] 142345 105331 165520 199207 177759 103770 199395 132349 140372 157235 ...</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMITTIME           : Date[1:129], format: &quot;2164-10-23&quot; &quot;2126-08-14&quot; ...</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DISCHTIME           : Date[1:129], format: &quot;2164-11-01&quot; &quot;2126-08-28&quot; ...</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DEATHTIME           : Date[1:129], format: NA &quot;2126-08-28&quot; ...</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMITTIME           : POSIXct[1:129], format: &quot;2164-10-23 21:09:00&quot; &quot;2126-08-14 22:32:00&quot; ...</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DISCHTIME           : POSIXct[1:129], format: &quot;2164-11-01 17:15:00&quot; &quot;2126-08-28 18:59:00&quot; ...</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DEATHTIME           : POSIXct[1:129], format: NA &quot;2126-08-28 18:59:00&quot; ...</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMISSION_TYPE      : chr [1:129] &quot;EMERGENCY&quot; &quot;EMERGENCY&quot; &quot;EMERGENCY&quot; &quot;EMERGENCY&quot; ...</span></span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMISSION_LOCATION  : chr [1:129] &quot;EMERGENCY ROOM ADMIT&quot; &quot;TRANSFER FROM HOSP/EXTRAM&quot; &quot;TRANSFER FROM HOSP/EXTRAM&quot; &quot;EMERGENCY ROOM ADMIT&quot; ...</span></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DISCHARGE_LOCATION  : chr [1:129] &quot;HOME HEALTH CARE&quot; &quot;DEAD/EXPIRED&quot; &quot;DEAD/EXPIRED&quot; &quot;SNF&quot; ...</span></span>
@@ -296,8 +296,8 @@ pre code {
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ RELIGION            : chr [1:129] &quot;CATHOLIC&quot; &quot;CATHOLIC&quot; &quot;CATHOLIC&quot; &quot;CATHOLIC&quot; ...</span></span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ MARITAL_STATUS      : chr [1:129] &quot;SEPARATED&quot; &quot;SINGLE&quot; &quot;&quot; &quot;DIVORCED&quot; ...</span></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ETHNICITY           : chr [1:129] &quot;BLACK/AFRICAN AMERICAN&quot; &quot;UNKNOWN/NOT SPECIFIED&quot; &quot;UNKNOWN/NOT SPECIFIED&quot; &quot;WHITE&quot; ...</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDREGTIME           : Date[1:129], format: &quot;2164-10-23&quot; NA ...</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDOUTTIME           : Date[1:129], format: &quot;2164-10-23&quot; NA ...</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDREGTIME           : POSIXct[1:129], format: &quot;2164-10-23 16:43:00&quot; NA ...</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDOUTTIME           : POSIXct[1:129], format: &quot;2164-10-23 23:00:00&quot; NA ...</span></span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DIAGNOSIS           : chr [1:129] &quot;SEPSIS&quot; &quot;HEPATITIS B&quot; &quot;SEPSIS&quot; &quot;HUMERAL FRACTURE&quot; ...</span></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HOSPITAL_EXPIRE_FLAG: int [1:129] 0 1 1 0 1 0 0 0 0 0 ...</span></span>
 <span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HAS_CHARTEVENTS_DATA: int [1:129] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
@@ -314,8 +314,8 @@ pre code {
 <span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ LAST_CAREUNIT : chr [1:136] &quot;MICU&quot; &quot;MICU&quot; &quot;MICU&quot; &quot;CCU&quot; ...</span></span>
 <span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ FIRST_WARDID  : int [1:136] 52 15 15 7 15 33 12 33 52 33 ...</span></span>
 <span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ LAST_WARDID   : int [1:136] 52 15 15 7 15 33 12 33 52 33 ...</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ INTIME        : Date[1:136], format: &quot;2164-10-23&quot; &quot;2126-08-14&quot; ...</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ OUTTIME       : Date[1:136], format: &quot;2164-10-25&quot; &quot;2126-08-28&quot; ...</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ INTIME        : POSIXct[1:136], format: &quot;2164-10-23 21:10:15&quot; &quot;2126-08-14 22:34:00&quot; ...</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ OUTTIME       : POSIXct[1:136], format: &quot;2164-10-25 12:21:07&quot; &quot;2126-08-28 18:59:00&quot; ...</span></span>
 <span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ LOS           : num [1:136] 1.63 13.85 2.65 2.14 1.29 ...</span></span></code></pre></div>
 <p>These base data extraction routines use R’s <code>DBI</code> package interface to execute SQL statements and pull back data in nicely formatted tibbles.</p>
 <ol start="2" style="list-style-type: decimal">
@@ -330,9 +330,9 @@ pre code {
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; tibble [136 × 27] (S3: tbl_df/tbl/data.frame)</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ SUBJECT_ID          : int [1:136] 10006 10011 10013 10017 10019 10026 10027 10029 10032 10033 ...</span></span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HADM_ID             : int [1:136] 142345 105331 165520 199207 177759 103770 199395 132349 140372 157235 ...</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMITTIME           : Date[1:136], format: &quot;2164-10-23&quot; &quot;2126-08-14&quot; ...</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DISCHTIME           : Date[1:136], format: &quot;2164-11-01&quot; &quot;2126-08-28&quot; ...</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DEATHTIME           : Date[1:136], format: NA &quot;2126-08-28&quot; ...</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMITTIME           : POSIXct[1:136], format: &quot;2164-10-23 21:09:00&quot; &quot;2126-08-14 22:32:00&quot; ...</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DISCHTIME           : POSIXct[1:136], format: &quot;2164-11-01 17:15:00&quot; &quot;2126-08-28 18:59:00&quot; ...</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DEATHTIME           : POSIXct[1:136], format: NA &quot;2126-08-28 18:59:00&quot; ...</span></span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMISSION_TYPE      : chr [1:136] &quot;EMERGENCY&quot; &quot;EMERGENCY&quot; &quot;EMERGENCY&quot; &quot;EMERGENCY&quot; ...</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ADMISSION_LOCATION  : chr [1:136] &quot;EMERGENCY ROOM ADMIT&quot; &quot;TRANSFER FROM HOSP/EXTRAM&quot; &quot;TRANSFER FROM HOSP/EXTRAM&quot; &quot;EMERGENCY ROOM ADMIT&quot; ...</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DISCHARGE_LOCATION  : chr [1:136] &quot;HOME HEALTH CARE&quot; &quot;DEAD/EXPIRED&quot; &quot;DEAD/EXPIRED&quot; &quot;SNF&quot; ...</span></span>
@@ -341,8 +341,8 @@ pre code {
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ RELIGION            : chr [1:136] &quot;CATHOLIC&quot; &quot;CATHOLIC&quot; &quot;CATHOLIC&quot; &quot;CATHOLIC&quot; ...</span></span>
 <span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ MARITAL_STATUS      : chr [1:136] &quot;SEPARATED&quot; &quot;SINGLE&quot; &quot;&quot; &quot;DIVORCED&quot; ...</span></span>
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ETHNICITY           : chr [1:136] &quot;BLACK/AFRICAN AMERICAN&quot; &quot;UNKNOWN/NOT SPECIFIED&quot; &quot;UNKNOWN/NOT SPECIFIED&quot; &quot;WHITE&quot; ...</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDREGTIME           : Date[1:136], format: &quot;2164-10-23&quot; NA ...</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDOUTTIME           : Date[1:136], format: &quot;2164-10-23&quot; NA ...</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDREGTIME           : POSIXct[1:136], format: &quot;2164-10-23 16:43:00&quot; NA ...</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ EDOUTTIME           : POSIXct[1:136], format: &quot;2164-10-23 23:00:00&quot; NA ...</span></span>
 <span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ DIAGNOSIS           : chr [1:136] &quot;SEPSIS&quot; &quot;HEPATITIS B&quot; &quot;SEPSIS&quot; &quot;HUMERAL FRACTURE&quot; ...</span></span>
 <span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HOSPITAL_EXPIRE_FLAG: int [1:136] 0 1 1 0 1 0 0 0 0 0 ...</span></span>
 <span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HAS_CHARTEVENTS_DATA: int [1:136] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
@@ -352,8 +352,8 @@ pre code {
 <span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ LAST_CAREUNIT       : chr [1:136] &quot;MICU&quot; &quot;MICU&quot; &quot;MICU&quot; &quot;CCU&quot; ...</span></span>
 <span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ FIRST_WARDID        : int [1:136] 52 15 15 7 15 33 12 33 52 33 ...</span></span>
 <span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ LAST_WARDID         : int [1:136] 52 15 15 7 15 33 12 33 52 33 ...</span></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ INTIME              : Date[1:136], format: &quot;2164-10-23&quot; &quot;2126-08-14&quot; ...</span></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ OUTTIME             : Date[1:136], format: &quot;2164-10-25&quot; &quot;2126-08-28&quot; ...</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ INTIME              : POSIXct[1:136], format: &quot;2164-10-23 21:10:15&quot; &quot;2126-08-14 22:34:00&quot; ...</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ OUTTIME             : POSIXct[1:136], format: &quot;2164-10-25 12:21:07&quot; &quot;2126-08-28 18:59:00&quot; ...</span></span>
 <span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ LOS                 : num [1:136] 1.63 13.85 2.65 2.14 1.29 ...</span></span></code></pre></div>
 <p>Note: in the same way each subject/patient could have multiple <code>HADM_ID</code> from different hospital admissions during the EHR course of the MIMIC database, each <code>HADM_ID</code> can have multiple <code>ICUSTAY_ID</code>.</p>
 </div>
@@ -495,7 +495,7 @@ pre code {
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ SUBJECT_ID: int [1:788730] 3 3 3 3 3 3 6 6 6 6 ...</span></span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ HADM_ID   : int [1:788730] 145834 145834 145834 145834 145834 145834 107064 107064 107064 107064 ...</span></span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ITEMID    : int [1:788730] 50809 50809 50809 50809 50809 50809 50809 50809 50809 50809 ...</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ CHARTTIME : Date[1:788730], format: &quot;2101-10-20&quot; &quot;2101-10-20&quot; ...</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ CHARTTIME : POSIXct[1:788730], format: &quot;2101-10-20 20:04:00&quot; &quot;2101-10-20 21:51:00&quot; ...</span></span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ VALUE     : chr [1:788730] &quot;265&quot; &quot;267&quot; &quot;299&quot; &quot;294&quot; ...</span></span>
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ VALUENUM  : num [1:788730] 265 267 299 294 140 128 106 146 151 145 ...</span></span>
 <span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ VALUEUOM  : chr [1:788730] &quot;mg/dL&quot; &quot;mg/dL&quot; &quot;mg/dL&quot; &quot;mg/dL&quot; ...</span></span>

@@ -9,6 +9,7 @@
 library(DBI)
 library(RSQLite)
 library(tidyverse)
+library(lubridate)
 #+
 
 #' Connect to the MIMIC3 database - for testing code only
@@ -38,8 +39,10 @@ db_get_from_table <- function(con, table, where = NULL) {
     db_select_data(con, str_c("SELECT * FROM", table, where, sep = " ")) %>%
     select(-ROW_ID)  %>%  # default to removing the ROW_ID internal primary key
         mutate(
-            across(ends_with("DATE"), as.Date),  # all columns ending in DATE convert to R Date type
-            across(ends_with("TIME"), as.Date)   # all columns ending in TIME convert to R Date type
+            # all columns ending in DATE convert to R Date
+            across(ends_with("DATE"), ymd_hms, tz = "America/New_York"),
+            # all columns ending in TIME convert to R DateTime
+            across(ends_with("TIME"), ymd_hms, tz = "America/New_York")
         )
 }
 
@@ -67,7 +70,7 @@ db_get_cptevents <- function(con, ...) {
 
 db_get_datetimeevents <- function(con, ...) {
     db_get_from_table(con, "datetimeevents", ...)  %>%
-        mutate(VALUE = as.Date(VALUE)) # VALUE column in DATETIMEEVENTS is a DATE
+        mutate(VALUE = ymd_hms(VALUE, tz = "America/New_York")) # VALUE column in DATETIMEEVENTS is a DATE
 }
 
 db_get_diagnoses_icd <- function(con, ...) {
@@ -129,10 +132,12 @@ db_get_outputevents <- function(con, ...) {
 db_get_patients <- function(con, ...) {
     db_get_from_table(con, "patients", ...)  %>%
         mutate(
-            DOB = as.Date(DOB),
-            DOD = as.Date(DOD),
-            DOD_HOSP = as.Date(DOD_HOSP),
-            DOD_SSN = as.Date(DOD_SSN)
+            across(ends_with("DATE"), ymd_hms, tz = "America/New_York"),
+
+            DOB = ymd_hms(DOB, tz = "America/New_York"),
+            DOD = ymd_hms(DOD, tz = "America/New_York"),
+            DOD_HOSP = ymd_hms(DOD_HOSP, tz = "America/New_York"),
+            DOD_SSN = ymd_hms(DOD_SSN, tz = "America/New_York")
         ) # DOB and DOD... columns in PATIENTS are DATEs
 }
 
