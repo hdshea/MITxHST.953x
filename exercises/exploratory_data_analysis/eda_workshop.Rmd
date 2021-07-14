@@ -3,8 +3,6 @@ title: "HST.953x Workshop 2.07: Exploratory Data Analysis"
 author: "H. David Shea"
 date: "`r format(Sys.time(), '%d %b %Y')`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     fig.align: center
     fig_caption: yes
@@ -13,6 +11,8 @@ output:
     highlight: tango
     theme: united
     #toc: yes
+  pdf_document:
+    toc: yes
 ---
 
 (Note:  Updated and modified from the hst953-edx github version.)
@@ -302,7 +302,7 @@ dat2 %>%
 # Groupings have to be contiguous and several neighboring numbers have very high frequencies
 
 # b)
-table(dat2$sofa.cat, dat2$hosp_exp_flg, dnn = c("SOFA Grp", "Died in Hosp"))
+prop.table(table(dat2$sofa.cat, dat2$hosp_exp_flg, dnn = c("SOFA Grp", "Died in Hosp")),1)
 table(dat2$sofa.cat, dat2$day_28_flg, dnn = c("SOFA Grp", "Died w/i 28 days"))
 ```
 
@@ -473,6 +473,6 @@ Oddstab42[2:4]/Oddstab42[1]
 plot_OR_by_level(dat2,"sofa.cat","day_28_flg")
 
 # g)
-plot_prop_by_level(dat2,"sofa.cat","day_28_flg",factor.var2="chf_flg")
-plot_prop_by_level(dat2,"chf_flg","day_28_flg",factor.var2="sofa.cat")
+plot_OR_by_level(dat2,"sofa.cat","day_28_flg",factor.var2="chf_flg")
+plot_OR_by_level(dat2,"chf_flg","day_28_flg",factor.var2="sofa.cat")
 ```
