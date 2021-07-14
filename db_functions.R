@@ -39,10 +39,10 @@ db_get_from_table <- function(con, table, where = NULL) {
     db_select_data(con, str_c("SELECT * FROM", table, where, sep = " ")) %>%
     select(-ROW_ID)  %>%  # default to removing the ROW_ID internal primary key
         mutate(
-            # all columns ending in DATE convert to R Date
-            across(ends_with("DATE"), ymd_hms, tz = "America/New_York"),
+            # all columns ending in DATE convert to R DateTime
+            across(ends_with("DATE"), ymd_hms),
             # all columns ending in TIME convert to R DateTime
-            across(ends_with("TIME"), ymd_hms, tz = "America/New_York")
+            across(ends_with("TIME"), ymd_hms)
         )
 }
 
@@ -70,7 +70,7 @@ db_get_cptevents <- function(con, ...) {
 
 db_get_datetimeevents <- function(con, ...) {
     db_get_from_table(con, "datetimeevents", ...)  %>%
-        mutate(VALUE = ymd_hms(VALUE, tz = "America/New_York")) # VALUE column in DATETIMEEVENTS is a DATE
+        mutate(VALUE = ymd_hms(VALUE)) # VALUE column in DATETIMEEVENTS is a DATE
 }
 
 db_get_diagnoses_icd <- function(con, ...) {
@@ -132,12 +132,10 @@ db_get_outputevents <- function(con, ...) {
 db_get_patients <- function(con, ...) {
     db_get_from_table(con, "patients", ...)  %>%
         mutate(
-            across(ends_with("DATE"), ymd_hms, tz = "America/New_York"),
-
-            DOB = ymd_hms(DOB, tz = "America/New_York"),
-            DOD = ymd_hms(DOD, tz = "America/New_York"),
-            DOD_HOSP = ymd_hms(DOD_HOSP, tz = "America/New_York"),
-            DOD_SSN = ymd_hms(DOD_SSN, tz = "America/New_York")
+            DOB = ymd_hms(DOB),
+            DOD = ymd_hms(DOD),
+            DOD_HOSP = ymd_hms(DOD_HOSP),
+            DOD_SSN = ymd_hms(DOD_SSN)
         ) # DOB and DOD... columns in PATIENTS are DATEs
 }
 
@@ -160,3 +158,7 @@ db_get_services <- function(con, ...) {
 db_get_transfers <- function(con, ...) {
     db_get_from_table(con, "transfers", ...)
 }
+
+#' Disconnect from the MIMIC3 database - for testing code only
+#'
+# dbDisconnect(mimic_db)

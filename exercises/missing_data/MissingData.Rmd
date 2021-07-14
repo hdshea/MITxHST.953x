@@ -133,14 +133,6 @@ Looking at the distribution of heart rate for all patients, we can assess potent
 Observe the distribution of heart rate for all the patients in the dataset.
 
 ```{r message=FALSE, warning=FALSE}
-#Preferring ggplot to (arguably easier for more interactive plots) plotly
-#p <- plot_ly(y = ~hr$VALUENUM,  name = "Heart rate", type = "box") %>%
-#layout(
-#    title = "Heart rate distribution for all patients",
-#    yaxis = list(title = 'Value [bpm]')
-#    ) 
-#p
-
 hr %>%
   ggplot(aes(y = VALUENUM)) +
   stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
@@ -180,14 +172,6 @@ Now repeat the process for pulse oximetry (SpO2).
 Observe the distribution of SpO2 for all the patients in the dataset.
 
 ```{r message=FALSE, warning=FALSE}
-#Preferring ggplot to plotly
-#p <- plot_ly(y = ~sp$VALUENUM,  name = "Pulse oximetry", type = "box") %>%
-#layout(
-#    title = "Pulse oximetry distribution for all patients",
-#    yaxis = list(title = 'Value [%]')
-#    ) 
-#p
-
 sp %>%
   ggplot(aes(y = VALUENUM)) +
   stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
