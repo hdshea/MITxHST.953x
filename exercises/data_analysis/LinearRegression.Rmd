@@ -1,0 +1,234 @@
+---
+title: "HST.953x Workshop 2.08: Linear Regression Exercises"
+author: "H. David Shea"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    fig.align: center
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 9
+    highlight: tango
+    theme: united
+    #toc: yes
+---
+
+(Note:  Updated and modified from the hst953-edx github version.)
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+library(devtools)
+if(!("MIMICbook" %in% installed.packages()[,1])) {
+ install_github("jraffa/MIMICbook")
+}
+library(MIMICbook)
+library(tableone)
+library(Hmisc)
+
+knitr::opts_chunk$set(
+    connection = "mimic3", # automatically uses this connection in sql chunks 
+    comment = "#>", 
+    collapse = TRUE, 
+    message = FALSE,
+    fig.width = 8,
+    fig.asp = ((1 + sqrt(5)) / 2) - 1, # the golden ratio - technically, the b proportion of a+b when a is 1
+    out.width = "70%",
+    fig.align = "center"
+)
+
+base_dir <- here::here("")
+```
+
+## Description
+
+This document contains the codes and scripts to follow the manuscript and contents for the Section 2.08.
+
+## 3a: Introduction to Data Analysis Approaches
+
+Import dataset from **PhysioNet** - raw data file downloaded in previous exercise.
+
+```{r message=FALSE, warning=FALSE}
+fnm <- fs::path(base_dir, "exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
+dat <- tibble(read.csv(fnm))
+rm(fnm)
+
+# Public dataset has NA values for variables required to complete workshop
+# Replace NA values with defaults since dataset only intended for teaching
+dat <- dat %>% 
+  mutate(
+    gender_num = ifelse(is.na(gender_num), 0L, gender_num),
+    sofa_first = ifelse(is.na(sofa_first), 0L, sofa_first)
+  )
+```
+
+Once it is imported, let's take a look on the variables included in this dataset:
+
+```{r VariableNames, message=FALSE, warning=FALSE}
+names(dat)
+```
+
+Retrieve the dimension (number of rows and columns) of *dat*:
+
+```{r DataDimensions, message=FALSE, warning=FALSE}
+dim(dat)
+```
+
+## 3b: Linear Regression
+
+Let's visualize the dataset with a scatter plot:
+
+```{r pressure, message=FALSE, warning=FALSE}
+ggplot(dat, aes(pco2_first, tco2_first)) +
+        geom_point(na.rm = TRUE) +
+        scale_x_continuous(limits = c(0, 175)) + 
+        labs(x = "PaCO_2 (mmHg)", y = "Bicarbonate (mEq/L)")
+```
+
+Let's fit the data to a linear regression model:
+
+```{r, message=FALSE, warning=FALSE}
+co2.lm <- lm(tco2_first ~ pco2_first, data = dat)
+```
+
+Let's display a summary of this fit:
+
+```{r, message=FALSE, warning=FALSE}
+summary(co2.lm)
+```
+
+Fitting a quadratic model:
+
+```{r, message=FALSE, warning=FALSE}
+co2.quad.lm <- lm(tco2_first ~ pco2_first + I(pco2_first^2), data = dat)
+summary(co2.quad.lm)$coef
+```
+
+Let's best fit lines to the scatter plots using the **abline** function
+
+```{r Fittings, message=FALSE, warning=FALSE}
+ggplot(dat, aes(pco2_first, tco2_first)) +
+        geom_point(na.rm = TRUE) +
+        scale_x_continuous(limits = c(0, 175)) + 
+        labs(x = "PaCO_2 (mmHg)", y = "Bicarbonate (mEq/L)") +
+        geom_smooth(formula = y ~ x, method = "lm", color = "red", na.rm = TRUE) +
+        geom_smooth(formula = y ~ x + I(x^2), method = "lm", color = "blue", na.rm = TRUE)
+```
+
+The red (linear term only) and blue (linear and quadratic terms) fits are nearly identical. This corresponds with the relatively small coefficient estimate for the I(pco2_firstˆ2) term. The p-value for this coefficient is about 0.86, and at the 0.05 significance level we would likely conclude that a quadratic term is not necessary in our model to fit the data, as the linear term only model fits the data nearly as well.
+
+## Statistical Interactions and Testing Nested Models
+
+Check what type of variable is assuming RStudio for **gender_num**.
+
+```{r, message=FALSE, warning=FALSE}
+class(dat$gender_num)
+```
+
+Set all (0,1) variables to the correct `factor` class:
+
+```{r, message=FALSE, warning=FALSE}
+is01_factor_column <- function(x) {
+  v <- unique(x)
+  ((length(v) == 1) & (v[1] %in% c(0,1))) | ((length(v) == 2) & (v[1] %in% c(0,1)) & (v[2] %in% c(0,1)))
+}
+
+dat <- dat %>% 
+  mutate(across(where(is01_factor_column), as.factor))
+
+```
+
+Fit again once it is encoded correctly **gender_num** and retrieve summary:
+
+```{r, message=FALSE, warning=FALSE}
+co2.gender.lm <- lm(tco2_first ~ pco2_first + gender_num, data = dat)
+summary(co2.gender.lm)$coef
+```
+
+Plot fitting lines and compare:
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(dat, aes(pco2_first, tco2_first, color = gender_num)) +
+        geom_point(na.rm = TRUE) +
+        scale_x_continuous(limits = c(0, 175)) + 
+        labs(x = "PaCO_2 (mmHg)", y = "Bicarbonate (mEq/L)") +
+        geom_abline(intercept = coef(co2.gender.lm)[1], 
+                    slope = coef(co2.gender.lm)[2], 
+                    color = "red") +
+        geom_abline(intercept = coef(co2.gender.lm)[1]+coef(co2.gender.lm)[3], 
+                    slope = coef(co2.gender.lm)[2], 
+                    color = "blue")
+```
+
+Modeling taking into consideration variables' interactions:
+```{r, message=FALSE, warning=FALSE}
+co2.gender.inteaction.lm <- lm(tco2_first ~ pco2_first * gender_num, data = dat)
+summary(co2.gender.inteaction.lm)$coef
+```
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(dat, aes(pco2_first, tco2_first, color = gender_num)) +
+        geom_point(na.rm = TRUE) +
+        scale_x_continuous(limits = c(0, 175)) + 
+        labs(x = "PaCO_2 (mmHg)", y = "Bicarbonate (mEq/L)") +
+        geom_abline(intercept = coef(co2.gender.lm)[1], 
+                    slope = coef(co2.gender.lm)[2], 
+                    color = "red") +
+        geom_abline(intercept = coef(co2.gender.lm)[1]+coef(co2.gender.lm)[3], 
+                    slope = coef(co2.gender.lm)[2], 
+                    color = "blue") +
+        geom_abline(intercept = coef(co2.gender.inteaction.lm)[1], 
+                    slope = coef(co2.gender.inteaction.lm)[2], 
+                    color = "red", lty=3, lwd = 2) +
+        geom_abline(intercept = coef(co2.gender.inteaction.lm)[1]+coef(co2.gender.inteaction.lm)[3], 
+                    slope = coef(co2.gender.inteaction.lm)[2]+coef(co2.gender.inteaction.lm)[4], 
+                    color = "blue", lty=3, lwd = 2)
+```
+
+Perform anova analysis:
+
+```{r, message=FALSE, warning=FALSE}
+anova(co2.lm, co2.gender.inteaction.lm)
+```
+
+We will highlight the reported F-test p-value _Pr(>F)_, which in this case is 0.2515. In nested models, the null hypothesis is that all coefficients in the larger model but not in the smaller model are zero. In the case we are testing, our null hypotheses are _B2_ and _B3_ = 0. Since the p-value exceeds the typically used significance level (_a_ = 0.05), we would not reject the null hypothesis and say the smaller model likely explains the data just as well as the larger model.
+
+Before presenting the results, some discussion of how you got the results should be done. It is a good idea to report the following: whether you transformed the outcome or any covariates in any way (e.g., by taking the logarithm), what covariates you considered, and how you chose the covariates which were in the model you reported.
+
+In our example above, we did not transform the outcome (TCO2); we considered PCO2 both as a linear and quadratic term; and we considered gender on its own and as an interaction term with PCO2. We first evaluated whether a quadratic term should be included in the model by using a t-test, after which we considered a model with gender and a gender-PCO2 interaction, and performed model selection with an F-test. Our final model involved only a linear PCO2 term and an intercept.  
+
+This model showed that TCO2 increassed 0.19 (SE: 0.008, p < 0.0001) units per unit increase of PCO2. The Multiple R-squared for he model was 0.2647.
+
+When reporting your results, it's a good idea to report three aspects for each covariate.
+
+## Confidence and Prediction Intervals
+
+Get confidence intervals:
+```{r, message=FALSE, warning=FALSE}
+confint(co2.lm)
+```
+
+Predict the outcome over the range of covariate values we observed determined by the min and max functions:
+
+```{r, message=FALSE, warning=FALSE}
+grid.pred <- tibble(pco2_first = seq.int(from = min(dat$pco2_first, na.rm = T),
+                                         to = max(dat$pco2_first, na.rm = T)))
+
+preds <- predict(co2.lm, newdata = grid.pred, interval = "prediction")
+
+grid.pred$lwr <- preds[,2]
+grid.pred$upr <- preds[,3]
+```
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(dat, aes(pco2_first, tco2_first)) +
+        geom_point(na.rm = TRUE) +
+        scale_x_continuous(limits = c(0, 175)) +
+        labs(x = "PaCO_2 (mmHg)", y = "Bicarbonate (mEq/L)") +
+        geom_smooth(formula = y ~ x, method = "lm", color = "red", lwd = 2, na.rm = TRUE) +
+        geom_line(aes(x = pco2_first, y = lwr), data = grid.pred, lty = 3) +
+        geom_line(aes(x = pco2_first, y = upr), data = grid.pred, lty = 3)
+```
