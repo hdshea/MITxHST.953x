@@ -19,15 +19,6 @@ output:
 
 ```{r setup, include=FALSE}
 library(tidyverse)
-library(lubridate)
-library(patchwork)
-library(devtools)
-if(!("MIMICbook" %in% installed.packages()[,1])) {
- install_github("jraffa/MIMICbook")
-}
-library(MIMICbook)
-library(tableone)
-library(Hmisc)
 
 knitr::opts_chunk$set(
     connection = "mimic3", # automatically uses this connection in sql chunks 
@@ -138,7 +129,6 @@ is01_factor_column <- function(x) {
 
 dat <- dat %>% 
   mutate(across(where(is01_factor_column), as.factor))
-
 ```
 
 Fit again once it is encoded correctly **gender_num** and retrieve summary:
