@@ -1,0 +1,81 @@
+---
+title: "Length of stay in the ICU"
+author: "H. David Shea"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output:
+  pdf_document:
+    toc: yes
+---
+
+(Note:  Updated and modified from the hst953-edx version authored by Tom Pollard.)
+
+```{r setup, include = FALSE}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+
+knitr::opts_chunk$set(
+    connection = "mimic3", # automatically uses this connection in sql chunks 
+    comment = "#>", 
+    collapse = TRUE, 
+    message = FALSE,
+    fig.width = 8,
+    fig.asp = ((1 + sqrt(5)) / 2) - 1, # the golden ratio - technically, the b proportion of a+b when a is 1
+    out.width = "70%",
+    fig.align = "center"
+)
+```
+ 
+## Source MIMIC-III data
+
+In the original version (on the hst953-edx site), they used a bigquery MIMIC-III installation.  I have in *project_base_dir*/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded.  I'll use that in the processing below.  The following code chunk attaches the database and loads auxiliary functions for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`).
+
+```{r source_aux_functions, include=TRUE}
+base_dir <- here::here("")
+db_dir <- fs::path(base_dir, "database")
+db_file <- fs::path(db_dir, "mimic3.db")
+
+if(dbCanConnect(RSQLite::SQLite(), db_file)) {
+    mimic3 <- dbConnect(RSQLite::SQLite(), db_file)
+}
+
+source(fs::path(base_dir, "db_functions.R"))
+source(fs::path(base_dir, "mimic3_meta_data.R"))
+```
+
+## Extract ICU stay data
+
+```{r load_icu_data, include=TRUE}
+data <- db_get_icustays(mimic3) %>% select(SUBJECT_ID, HADM_ID, LOS)
+ 
+str(data)
+```
+
+## Calculate median stay length
+
+This document shows how RMarkdown can be used to create a reproducible analysis using MIMIC-III (version 1.4). Let's calculate the median length of stay in the ICU and then include this value in our document.
+
+```{r calculate_mean_los, include=FALSE}
+avg_los <- median(data$LOS, na.rm=TRUE)
+rounded_avg_los <-round(avg_los, digits = 2)
+```
+
+So the median length of stay in the ICU is `r avg_los` days. Rounded to two decimal places, this is `r rounded_avg_los` days.
+
+## Plot the data
+
+We can plot the distribution of length of stay using `ggplot` and `geom_histogram`:  
+
+```{r plot_los, echo=FALSE, include=TRUE,  warning = FALSE}
+data %>%
+   ggplot(aes(x = LOS)) +
+   geom_histogram(
+      binwidth = 1,
+      fill = "#FF9999",
+      color = "white",
+      na.rm = TRUE) +
+   scale_x_continuous(limits = c(0, 25), breaks = seq(0, 25, by = 5)) +
+   labs(x = "Length of stay in the ICU, days.", y = NULL)
+```

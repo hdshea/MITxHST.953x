@@ -11,7 +11,7 @@
 
 <meta name="author" content="H. David Shea" />
 
-<meta name="date" content="2021-07-14" />
+<meta name="date" content="2021-07-19" />
 
 <title>HST.953x Workshop 2.07: Exploratory Data Analysis</title>
 
@@ -249,7 +249,7 @@ pre code {
 
 <h1 class="title toc-ignore">HST.953x Workshop 2.07: Exploratory Data Analysis</h1>
 <h4 class="author">H. David Shea</h4>
-<h4 class="date">14 Jul 2021</h4>
+<h4 class="date">19 Jul 2021</h4>
 
 </div>
 
@@ -452,7 +452,7 @@ pre code {
 <p>As you will note, many of the <code>flg</code> variables listed in the summary output above, are constrained by 0 and 1. This is because they have a binary encoding (usually 1 if present, and 0 if not). Although not necessary in this particular instance, it is sometimes useful to encode these types of variables as factors. In the original version, they use the function <code>convert.bin.fac</code> from the <code>MIMICbook</code> package. I have opted to change to <code>tidyverse</code> and a function defined to test where the column is only 0s and 1s.</p>
 <p>The <code>MIMICbook</code> package provides some useful functions written for the textbook that we will use throughout some of the workshops. It installs via GitHub - see <code>setup</code> chunk above.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>is01_factor_column <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  v <span class="ot">&lt;-</span> <span class="fu">unique</span>(x)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  v <span class="ot">&lt;-</span> <span class="fu">unique</span>(x[<span class="sc">!</span><span class="fu">is.na</span>(x)])</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  ((<span class="fu">length</span>(v) <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">&amp;</span> (v[<span class="dv">1</span>] <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>))) <span class="sc">|</span> ((<span class="fu">length</span>(v) <span class="sc">==</span> <span class="dv">2</span>) <span class="sc">&amp;</span> (v[<span class="dv">1</span>] <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">&amp;</span> (v[<span class="dv">2</span>] <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>)))</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
@@ -901,13 +901,13 @@ pre code {
 <span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [5, 7) 0.84218750 0.15781250</span></span>
 <span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   7      0.83127572 0.16872428</span></span>
 <span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [8,17] 0.80769231 0.19230769</span></span>
-<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(dat2<span class="sc">$</span>sofa.cat, dat2<span class="sc">$</span>day_28_flg, <span class="at">dnn =</span> <span class="fu">c</span>(<span class="st">&quot;SOFA Grp&quot;</span>, <span class="st">&quot;Died w/i 28 days&quot;</span>))</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(dat2<span class="sc">$</span>sofa.cat, dat2<span class="sc">$</span>day_28_flg, <span class="at">dnn =</span> <span class="fu">c</span>(<span class="st">&quot;SOFA Grp&quot;</span>, <span class="st">&quot;Died w/i 28 days&quot;</span>)),<span class="dv">1</span>)</span>
 <span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         Died w/i 28 days</span></span>
-<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; SOFA Grp   0   1</span></span>
-<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [0, 5) 487  42</span></span>
-<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [5, 7) 526 114</span></span>
-<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   7      195  48</span></span>
-<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [8,17] 285  79</span></span></code></pre></div>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; SOFA Grp          0          1</span></span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [0, 5) 0.92060491 0.07939509</span></span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [5, 7) 0.82187500 0.17812500</span></span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   7      0.80246914 0.19753086</span></span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [8,17] 0.78296703 0.21703297</span></span></code></pre></div>
 </div>
 </div>
 </div>

@@ -5,7 +5,7 @@ rawdata/*.csv
 rawdata/*.csv.gz
 rawdata/*.txt
 rawdata/*.md
-
+exercises/data_analysis/regression_exercise_files/
 # History files
 .Rhistory
 .Rapp.history

@@ -121,7 +121,7 @@ The `MIMICbook` package provides some useful functions written for the textbook 
 
 ```{r message=FALSE, warning=FALSE}
 is01_factor_column <- function(x) {
-  v <- unique(x)
+  v <- unique(x[!is.na(x)])
   ((length(v) == 1) & (v[1] %in% c(0,1))) | ((length(v) == 2) & (v[1] %in% c(0,1)) & (v[2] %in% c(0,1)))
 }
 
@@ -303,7 +303,7 @@ dat2 %>%
 
 # b)
 prop.table(table(dat2$sofa.cat, dat2$hosp_exp_flg, dnn = c("SOFA Grp", "Died in Hosp")),1)
-table(dat2$sofa.cat, dat2$day_28_flg, dnn = c("SOFA Grp", "Died w/i 28 days"))
+prop.table(table(dat2$sofa.cat, dat2$day_28_flg, dnn = c("SOFA Grp", "Died w/i 28 days")),1)
 ```
 
 # Plotting relationships with discrete variables
