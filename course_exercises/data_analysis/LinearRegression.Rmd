@@ -3,8 +3,6 @@ title: "HST.953x Workshop 2.08: Linear Regression Exercises"
 author: "H. David Shea"
 date: "`r format(Sys.time(), '%d %b %Y')`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     fig.align: center
     fig_caption: yes
@@ -13,6 +11,8 @@ output:
     highlight: tango
     theme: united
     #toc: yes
+  pdf_document:
+    toc: yes
 ---
 
 (Note:  Updated and modified from the hst953-edx github version.)
@@ -43,7 +43,7 @@ This document contains the codes and scripts to follow the manuscript and conten
 Import dataset from **PhysioNet** - raw data file downloaded in previous exercise.
 
 ```{r message=FALSE, warning=FALSE}
-fnm <- fs::path(base_dir, "exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
+fnm <- fs::path(base_dir, "course_exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
 dat <- tibble(read.csv(fnm))
 rm(fnm)
 

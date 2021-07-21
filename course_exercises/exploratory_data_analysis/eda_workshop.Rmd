@@ -79,7 +79,7 @@ All too often the success/failure of an analysis is determined from a single num
 For this workshop we will use data from a study that examined the effect of indwelling arterial catheters (aka IAC or aline) on 28 day mortality in intensive care unit (ICU) patients on mechanical ventilation during the first day of ICU admission. The data originates from MIMIC II v2.6. The data is ready for exploratory data analysis (the data extraction and cleaning have already been completed), and contained in a comma separated value (.csv) file generated after this process and stored on Physionet. Start by loading the data file from Physionet into a data frame called `dat`:
 
 ```{r message=FALSE, warning=FALSE}
-fnm <- fs::path(base_dir, "exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
+fnm <- fs::path(base_dir, "course_exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
 dat <- tibble(read.csv(fnm))
 rm(fnm)
 

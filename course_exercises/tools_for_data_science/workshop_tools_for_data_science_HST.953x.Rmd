@@ -30,19 +30,19 @@ knitr::opts_chunk$set(
  
 ## Source MIMIC-III data
 
-In the original version (on the hst953-edx site), they used a bigquery MIMIC-III installation.  I have in *project_base_dir*/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded.  I'll use that in the processing below.  The following code chunk attaches the database and loads auxiliary functions for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`).
+In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded.  Now, I have in *mimic_base_dir*/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded.  I'll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data.  The following code chunk attaches the database and loads auxiliary functions (available in *mimic_base_dir*/mimic_concepts) for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`).
 
 ```{r source_aux_functions, include=TRUE}
 base_dir <- here::here("")
-db_dir <- fs::path(base_dir, "database")
-db_file <- fs::path(db_dir, "mimic3.db")
-
+mimic_base_dir <- fs::path(base_dir,"../MIMIC-research")
+db_file <- fs::path(mimic_base_dir, "database/mimic3.db")
 if(dbCanConnect(RSQLite::SQLite(), db_file)) {
     mimic3 <- dbConnect(RSQLite::SQLite(), db_file)
+} else {
+    stop(str_c("Database file: ", db_file, " not found.", sep=""))
 }
-
-source(fs::path(base_dir, "db_functions.R"))
-source(fs::path(base_dir, "mimic3_meta_data.R"))
+source(fs::path(mimic_base_dir, "mimic_concepts/db_functions.R"))
+source(fs::path(mimic_base_dir, "mimic_concepts/mimic3_meta_data.R"))
 ```
 
 ## Extract ICU stay data

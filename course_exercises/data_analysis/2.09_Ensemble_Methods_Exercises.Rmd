@@ -3,8 +3,6 @@ title: "HST.953x Workshop 2.09: Ensemble Methods Exercises"
 author: "H. David Shea"
 date: "`r format(Sys.time(), '%d %b %Y')`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     fig.align: center
     fig_caption: yes
@@ -13,6 +11,8 @@ output:
     highlight: tango
     theme: united
     #toc: yes
+  pdf_document:
+    toc: yes
 ---
 
 (Note:  Updated and modified from ["R for Statistical Learning"](https://daviddalpiaz.github.io/r4sl/).)

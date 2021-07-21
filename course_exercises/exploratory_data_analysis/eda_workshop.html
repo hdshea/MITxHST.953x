@@ -11,7 +11,7 @@
 
 <meta name="author" content="H. David Shea" />
 
-<meta name="date" content="2021-07-19" />
+<meta name="date" content="2021-07-21" />
 
 <title>HST.953x Workshop 2.07: Exploratory Data Analysis</title>
 
@@ -249,7 +249,7 @@ pre code {
 
 <h1 class="title toc-ignore">HST.953x Workshop 2.07: Exploratory Data Analysis</h1>
 <h4 class="author">H. David Shea</h4>
-<h4 class="date">19 Jul 2021</h4>
+<h4 class="date">21 Jul 2021</h4>
 
 </div>
 
@@ -280,7 +280,7 @@ pre code {
 <div id="prerequisites" class="section level1">
 <h1>Prerequisites</h1>
 <p>For this workshop we will use data from a study that examined the effect of indwelling arterial catheters (aka IAC or aline) on 28 day mortality in intensive care unit (ICU) patients on mechanical ventilation during the first day of ICU admission. The data originates from MIMIC II v2.6. The data is ready for exploratory data analysis (the data extraction and cleaning have already been completed), and contained in a comma separated value (.csv) file generated after this process and stored on Physionet. Start by loading the data file from Physionet into a data frame called <code>dat</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>fnm <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;exercises/exploratory_data_analysis/aline_full_cohort_data.csv&quot;</span>)</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>fnm <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;course_exercises/exploratory_data_analysis/aline_full_cohort_data.csv&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="fu">read.csv</span>(fnm))</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(fnm)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>

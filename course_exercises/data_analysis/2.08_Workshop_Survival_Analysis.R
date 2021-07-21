@@ -8,7 +8,6 @@ library(survminer)
 library(dplyr)
 
 # Import the ovarian cancer dataset and have a look at it
-data(ovarian)
 glimpse(ovarian)
 
 # Dichotomize age and change data labels

@@ -1,17 +1,14 @@
 not_for_git/
 tests/
 database/mimic3.db
-rawdata/*.csv
-rawdata/*.csv.gz
-rawdata/*.txt
-rawdata/*.md
-exercises/data_analysis/regression_exercise_files/
+
 # History files
 .Rhistory
 .Rapp.history
 
 # Session Data files
 .RData
+.DS_Store
 
 # User-specific files
 .Ruserdata

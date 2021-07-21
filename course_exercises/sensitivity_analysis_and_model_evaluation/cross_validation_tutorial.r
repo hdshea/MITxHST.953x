@@ -3,7 +3,7 @@
 library(caret)
 
 # Heart data
-heart_df <- read.csv("~/R/MITxHST.953x/exercises/sensitivity_analysis_and_model_evaluation/heart_tidy.csv", sep = ',', header = FALSE)
+heart_df <- read.csv("~/R/MITxHST.953x/course_exercises/sensitivity_analysis_and_model_evaluation/heart_tidy.csv", sep = ',', header = FALSE)
 str(heart_df)
 head(heart_df)
 

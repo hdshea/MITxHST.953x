@@ -11,7 +11,7 @@
 
 <meta name="author" content="H. David Shea" />
 
-<meta name="date" content="2021-07-10" />
+<meta name="date" content="2021-07-21" />
 
 <title>Data Preprocessing</title>
 
@@ -249,7 +249,7 @@ pre code {
 
 <h1 class="title toc-ignore">Data Preprocessing</h1>
 <h4 class="author">H. David Shea</h4>
-<h4 class="date">10 Jul 2021</h4>
+<h4 class="date">21 Jul 2021</h4>
 
 </div>
 
@@ -257,17 +257,17 @@ pre code {
 <p>(Note: Updated and modified from the hst953-edx github version.)</p>
 <div id="source-mimic-iii-demo-version-data" class="section level1">
 <h1>Source MIMIC-III demo version data</h1>
-<p>In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded. Now, I have in <em>project_base_dir</em>/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded. I’ll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data. The following code chunk attaches the database and loads auxiliary functions for extracting database data (<code>db_functions.R</code>) and for doing some MIMIC data interpretation and pre-processing (<code>mimic3_meta_data.R</code>) - including the processing to get just the demo data.</p>
+<p>In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded. Now, I have in <em>mimic_base_dir</em>/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded. I’ll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data. The following code chunk attaches the database and loads auxiliary functions (available in <em>mimic_base_dir</em>/mimic_concepts) for extracting database data (<code>db_functions.R</code>) and for doing some MIMIC data interpretation and pre-processing (<code>mimic3_meta_data.R</code>) - including the processing to get just the demo data.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>base_dir <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>db_dir <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;database&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>db_file <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(db_dir, <span class="st">&quot;mimic3.db&quot;</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">dbCanConnect</span>(RSQLite<span class="sc">::</span><span class="fu">SQLite</span>(), db_file)) {</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    mimic3 <span class="ot">&lt;-</span> <span class="fu">dbConnect</span>(RSQLite<span class="sc">::</span><span class="fu">SQLite</span>(), db_file)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;db_functions.R&quot;</span>))</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;mimic3_meta_data.R&quot;</span>))</span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>mimic_base_dir <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(base_dir,<span class="st">&quot;../MIMIC-research&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>db_file <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(mimic_base_dir, <span class="st">&quot;database/mimic3.db&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">dbCanConnect</span>(RSQLite<span class="sc">::</span><span class="fu">SQLite</span>(), db_file)) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    mimic3 <span class="ot">&lt;-</span> <span class="fu">dbConnect</span>(RSQLite<span class="sc">::</span><span class="fu">SQLite</span>(), db_file)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="fu">str_c</span>(<span class="st">&quot;Database file: &quot;</span>, db_file, <span class="st">&quot; not found.&quot;</span>, <span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(fs<span class="sc">::</span><span class="fu">path</span>(mimic_base_dir, <span class="st">&quot;mimic_concepts/db_functions.R&quot;</span>))</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(fs<span class="sc">::</span><span class="fu">path</span>(mimic_base_dir, <span class="st">&quot;mimic_concepts/mimic3_meta_data.R&quot;</span>))</span></code></pre></div>
 </div>
 <div id="data-integration" class="section level1">
 <h1>Data integration</h1>
@@ -469,7 +469,7 @@ pre code {
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ OVERALL_NML: num [1:17] 0.556 1 0.556 0.556 0.556 ...</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(Elixhauser_sicker_sample,</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;exercises/data_preprocessing/Elixhauser_sicker_sample.csv&quot;</span>), <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          fs<span class="sc">::</span><span class="fu">path</span>(base_dir, <span class="st">&quot;course_exercises/data_preprocessing/Elixhauser_sicker_sample.csv&quot;</span>), <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
 </div>
 </div>
 </div>

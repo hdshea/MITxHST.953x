@@ -1,7 +1,7 @@
 library(tidyverse)
 
 base_dir <- here::here("")
-fnm <- fs::path(base_dir, "exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
+fnm <- fs::path(base_dir, "course_exercises/exploratory_data_analysis/aline_full_cohort_data.csv")
 dat <- tibble(read.csv(fnm))
 rm(fnm)
 
