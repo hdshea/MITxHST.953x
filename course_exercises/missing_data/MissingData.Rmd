@@ -1,0 +1,442 @@
+---
+title: "Missing Data"
+author: "H. David Shea"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    fig.align: center
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 9
+    highlight: tango
+    theme: united
+    #toc: yes
+---
+
+(Note:  Updated and modified from the hst953-edx github version.)
+
+```{r setup, include=FALSE}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+library(VIM)
+library(Amelia)
+
+knitr::opts_chunk$set(
+    connection = "mimic3", # automatically uses this connection in sql chunks 
+    comment = "#>", 
+    collapse = TRUE, 
+    message = FALSE,
+    fig.width = 8,
+    fig.asp = ((1 + sqrt(5)) / 2) - 1, # the golden ratio - technically, the b proportion of a+b when a is 1
+    out.width = "70%",
+    fig.align = "center"
+)
+```
+
+# Source MIMIC-III demo version data
+
+In the original version (on the hst953-edx github site), they used the MIMIC-III demo version directly loaded.  Now, I have in *project_base_dir*/database/mimic3.db the SQLite version of the full MIMIC-III v1.4 database loaded.  I'll use that in the processing below - with some pre-coded inclusion criteria to extract just the demo data.  The following code chunk attaches the database and loads auxiliary functions for extracting database data (`db_functions.R`) and for doing some MIMIC data interpretation and pre-processing (`mimic3_meta_data.R`) - including the processing to get just the demo data.
+
+```{r source_aux_functions, include=TRUE}
+base_dir <- here::here("")
+db_dir <- fs::path(base_dir, "database")
+db_file <- fs::path(db_dir, "mimic3.db")
+
+if(dbCanConnect(RSQLite::SQLite(), db_file)) {
+    mimic3 <- dbConnect(RSQLite::SQLite(), db_file)
+}
+
+source(fs::path(base_dir, "db_functions.R"))
+source(fs::path(base_dir, "mimic3_meta_data.R"))
+```
+
+## Extract base data
+
+These are the tibbles used in the following exercises:
+
+```{r message=FALSE, warning=FALSE}
+adm <- db_get_admissions(mimic3, where = demo_subject_ids)
+
+icu <- db_get_icustays(mimic3, where = demo_subject_ids)
+
+icu_adm <- adm %>% 
+  left_join(icu, by = c("SUBJECT_ID", "HADM_ID"))
+
+vitals <- db_get_chartevents(mimic3, where = demo_subject_ids)
+```
+
+## Exercise: Selection of variables
+
+Aim: Select variables to analyze missing values.
+
+### Vital Signs
+
+D_ITEMS is sourced from two distinct ICU databases. The main consequence is that there are duplicate ITEMID for each concept. For example, heart rate is captured both as an ITEMID of 211 (CareVue) and as an ITEMID of 220045 (Metavision). As a result, it is necessary to search for multiple ITEMID to capture a single concept across the entire database.
+
+For more information read: https://mimic.mit.edu/docs/iii/tables/d_items/
+
+In GitHub you may find code regarding vital signs and respective items IDs:
+
+https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/firstday/vitals_first_day.sql
+
+We will use data from chartevents, namely heart rate (hr) and pulse oximetry (SpO2) measurements. Attention to the units. Since much of the information is manually typed in the system, human error can always be present.
+
+Heart rate data:
+```{sql}
+SELECT ITEMID, LABEL, ABBREVIATION, DBSOURCE, LINKSTO, CATEGORY, UNITNAME, PARAM_TYPE, CONCEPTID
+FROM   D_ITEMS
+WHERE  ITEMID in (211, 220045);
+```
+
+Pulse oximetry data:
+```{sql}
+SELECT ITEMID, LABEL, ABBREVIATION, DBSOURCE, LINKSTO, CATEGORY, UNITNAME, PARAM_TYPE, CONCEPTID
+FROM   D_ITEMS
+WHERE  ITEMID in (646, 220277);
+```
+
+Review the amount of missing values in both vitals.
+
+```{r message=FALSE, warning=FALSE}
+hr <- vitals %>% 
+  filter(((ITEMID == 211) | (ITEMID == 220045)) & (toupper(VALUEUOM) == "BPM"))
+
+summary(hr$VALUENUM)
+length(hr$VALUENUM)
+na_hr <- hr %>% filter(is.na(VALUENUM)) %>% count() %>% pull(n)
+
+sp <- vitals %>% 
+  filter(((ITEMID == 646) | (ITEMID == 220277)) & (VALUEUOM == "%"))
+
+summary(sp$VALUENUM)
+length(sp$VALUENUM)
+na_sp <- sp %>% filter(is.na(VALUENUM)) %>% count() %>% pull(n)
+```
+
+We observe there are `r na_hr` missing values ("NA") for heart rate and `r na_sp` "NA" for SpO2. Heart rate has a slightly higher frequency of measurement, (however this is a demo version of the database).
+
+##  Exercise: Handling missing data in dataframes 
+
+Two of the simplest methods to handle missing data are presented below. Recoding a missing value consists of assigning a value to an already existing value (eg. outlier) which we want to recode as missing. Excluding missing values can be performed by excluding objects (patients, rows in the dataframe) or variables (columns in the dataframe) with significant amount of missing data (see this chapter contents for more detailed theory).
+
+### Outliers
+
+Before handling missing data, we should analyze the presence of outliers (refer to the respective chapter in the course). If we apply an imputation method before processing outliers, our imputation will be based on incorrect data and therefore not valid. 
+
+Looking at the distribution of heart rate for all patients, we can assess potential outliers through a box plot.
+
+Observe the distribution of heart rate for all the patients in the dataset.
+
+```{r message=FALSE, warning=FALSE}
+hr %>%
+  ggplot(aes(y = VALUENUM)) +
+  stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
+  geom_boxplot(na.rm = TRUE) +
+  labs(title = "Heart rate distribution for all patients",
+       x = "Heart Rate",
+       y = 'Value [bpm]')
+
+uw <- quantile(hr$VALUENUM, 3/4, na.rm = TRUE) + (1.5 * IQR(hr$VALUENUM, na.rm = TRUE))
+lw <- quantile(hr$VALUENUM, 1/4, na.rm = TRUE) - (1.5 * IQR(hr$VALUENUM, na.rm = TRUE))
+
+above <- sum(hr$VALUENUM > uw, na.rm = TRUE)
+below <- sum(hr$VALUENUM < lw, na.rm = TRUE)
+```
+
+We observe there are a few outliers. `r above` observations lie above the upper whisker (`r uw`) and `r below` observations lie below the lower whisker (`r lw`).
+
+### Missing data recoding
+
+Aim: Recode a value as missing.
+
+All of the heart rate values that we see in these data are within a reasonable range.  If there were extreme outlier values (greater than, say, 300, or less than zero), we would want to correct these.  We can recode all values outside the physiological ranges [0, 300] bpm as "NA" in the dataset for all patients.
+
+```{r message=FALSE, warning=FALSE}
+hr <- hr %>% 
+  mutate(
+    VALUENUM = if_else((VALUENUM < 0) | (VALUENUM > 300), NA_real_, VALUENUM)
+  )
+
+summary(hr$VALUENUM) 
+```
+
+And now we have a complete dataset with missing data preprocessed for heart rate measurements. 
+
+Now repeat the process for pulse oximetry (SpO2). 
+
+Observe the distribution of SpO2 for all the patients in the dataset.
+
+```{r message=FALSE, warning=FALSE}
+sp %>%
+  ggplot(aes(y = VALUENUM)) +
+  stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
+  geom_boxplot(na.rm = TRUE) +
+  labs(title = "Pulse oximetry distribution for all patients",
+       x = "Pulse oximetry",
+       y = 'Value [%]')
+
+uw <- quantile(sp$VALUENUM, 3/4, na.rm = TRUE) + (1.5 * IQR(sp$VALUENUM, na.rm = TRUE))
+lw <- quantile(sp$VALUENUM, 1/4, na.rm = TRUE) - (1.5 * IQR(sp$VALUENUM, na.rm = TRUE))
+
+above <- sum(sp$VALUENUM > uw, na.rm = TRUE)
+below <- sum(sp$VALUENUM < lw, na.rm = TRUE)
+```
+
+We observe there are a few outliers.  `r above` observations lie above the upper whisker (`r uw`) and `r below` observations lie below the lower whisker (`r lw`).
+
+As with the heart rate values, All of the pulse oximetry values that we see in these data are within the physiological range.  If there were extreme outlier values (the physiological range is [0, 100] %), we would want to correct these.  We can recode all values outside the physiological ranges as "NA" in the dataset for all patients.
+
+```{r message=FALSE, warning=FALSE}
+sp <- sp %>% 
+  mutate(
+    VALUENUM = if_else((VALUENUM < 0) | (VALUENUM > 100), NA_real_, VALUENUM)
+  )
+
+summary(sp$VALUENUM)
+```
+
+
+While within the physiological range, we observe that there are several values bellow 80%. Some of these values may correspond to other variables, such as respiratory or heart rate that were mistyped in the system. For our analysis we will recoded them as "NA".
+
+```{r message=FALSE, warning=FALSE}
+sp <- sp %>% 
+  mutate(
+    VALUENUM = if_else(VALUENUM < 80, NA_real_, VALUENUM)
+  )
+
+summary(sp$VALUENUM)
+
+sp %>%
+  ggplot(aes(y = VALUENUM)) +
+  stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
+  geom_boxplot(na.rm = TRUE) +
+  labs(title = "Pulse oximetry distribution for all patients",
+       x = "Pulse oximetry",
+       y = 'Value [%]')
+
+uw <- quantile(sp$VALUENUM, 3/4, na.rm = TRUE) + (1.5 * IQR(sp$VALUENUM, na.rm = TRUE))
+lw <- quantile(sp$VALUENUM, 1/4, na.rm = TRUE) - (1.5 * IQR(sp$VALUENUM, na.rm = TRUE))
+
+above <- sum(sp$VALUENUM > uw, na.rm = TRUE)
+below <- sum(sp$VALUENUM < lw, na.rm = TRUE)
+```
+
+After recoding, `r above` observations lie above the upper whisker (`r uw`) and `r below` observations lie below the lower whisker (`r lw`).
+
+## Exercise: Plotting missing data 
+
+Aim: Analyze and visualize the missing data 
+
+### Complete cases for heart rate
+
+The function `complete.cases` returns a logical vector indicating which cases _are_ complete.
+
+```{r message=FALSE, warning=FALSE}
+hr %>% filter(!complete.cases(SUBJECT_ID))
+na_sid <- hr %>% filter(!complete.cases(SUBJECT_ID)) %>% count()
+na_sid_pct <- round(100 * na_sid / (hr %>% count()), 2)
+
+hr %>% filter(!complete.cases(VALUEUOM))
+na_uom <- hr %>% filter(!complete.cases(VALUEUOM)) %>% count()
+na_uom_pct <- round(100 * na_uom / (hr %>% count()), 2)
+
+hr %>% filter(!complete.cases(VALUENUM))
+na_val <- hr %>% filter(!complete.cases(VALUENUM)) %>% count()
+na_val_pct <- round(100 * na_val / (hr %>% count()), 2)
+```
+
+We have `r na_sid` observations with missing subjects IDs (`r na_sid_pct`%), `r na_uom` observations with missing heart rate units (`r na_uom_pct`%), and we have `r na_val` observations with missing heart rate values (`r na_val_pct`%).
+
+### Plotting missing values for heart rate
+
+The `aggr` function from the `VIM` package allows one to calculate and/or plot the amount of missing/imputed values in each variable and in certain combinations of variables.
+
+```{r message=FALSE, warning=FALSE}
+na_hr <- hr %>% 
+  select(VALUENUM) %>% 
+  aggr(col = c('navyblue','#2980b9'), numbers = TRUE, sortVars = TRUE,
+       cex.axis = 0.7, gap = 3, ylab = c("Missing data","Pattern"))
+```
+
+We observe that for the case of heart rate there are `r round(100.00 - na_hr$percent[2],2)`% of the values in the data set or `r round(na_hr$percent[2], 2)`% missing. 
+
+### Omit cases for heart rate
+
+The function `na.omit` returns the input object with listwise deletion of missing values.
+
+```{r message=FALSE, warning=FALSE}
+hr_complete <- na.omit(hr)
+```
+
+And now we have a complete dataset with missing data preprocessed for heart rate measurements. 
+
+Now repeat the steps for pulse oximetry.
+
+### Complete cases for pulse oximetry
+
+```{r message=FALSE, warning=FALSE}
+sp %>% filter(!complete.cases(SUBJECT_ID))
+na_sid <- sp %>% filter(!complete.cases(SUBJECT_ID)) %>% count()
+na_sid_pct <- round(100 * na_sid / (sp %>% count()), 2)
+
+sp %>% filter(!complete.cases(VALUEUOM))
+na_uom <- sp %>% filter(!complete.cases(VALUEUOM)) %>% count()
+na_uom_pct <- round(100 * na_uom / (sp %>% count()), 2)
+
+sp %>% filter(!complete.cases(VALUENUM))
+na_val <- sp %>% filter(!complete.cases(VALUENUM)) %>% count()
+na_val_pct <- round(100 * na_val / (sp %>% count()), 2)
+```
+
+We have `r na_sid` observations with missing subjects IDs (`r na_sid_pct`%), `r na_uom` observations with missing pulse oximetry units (`r na_uom_pct`%), and we have `r na_val` observations with missing pulse oximetry values (`r na_val_pct`%).
+
+### Plotting missing values for pulse oximetry
+
+```{r message=FALSE, warning=FALSE}
+na_sp <- sp %>% 
+  select(VALUENUM) %>% 
+  aggr(col = c('navyblue','#2980b9'), numbers = TRUE, sortVars = TRUE,
+       cex.axis = 0.7, gap = 3, ylab = c("Missing data","Pattern"))
+```
+
+We observe that for the case of pulse oximetry there are `r round(100.00 - na_sp$percent[2],2)`% of the values in the data set or `r round(na_sp$percent[2], 2)`% missing. 
+
+### Omit cases for pulse oximetry
+
+```{r message=FALSE, warning=FALSE}
+sp_complete <- na.omit(sp)
+```
+
+And now we have a complete dataset with missing data preprocessed for pulse oximetry measurements. 
+
+Attention however, because missing data might not be missing at random (MNAR - see chapter contents for details) and in that case it might be important to identify and handle in a different way the missing values in the dataset. Eg. this can be done through missing data imputation.
+
+We can now see how the distribution looks like for complete and processed data.
+
+```{r message=FALSE, warning=FALSE}
+top <- max(sp$VALUENUM, hr$VALUENUM, na.rm = TRUE)
+bot <- min(sp$VALUENUM, hr$VALUENUM, na.rm = TRUE)
+
+hr_g <- hr_complete %>%
+  ggplot(aes(y = VALUENUM)) +
+  stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
+  geom_boxplot(na.rm = TRUE) +
+  scale_y_continuous(limits = c(bot, top)) +
+  labs(title = "Heart rate distribution for all patients",
+       x = "Heart rate",
+       y = 'Value [bpm]')
+
+sp_g <- sp_complete %>%
+  ggplot(aes(y = VALUENUM)) +
+  stat_boxplot(geom = "errorbar", width = 0.2, na.rm = TRUE) +
+  geom_boxplot(na.rm = TRUE) +
+  scale_y_continuous(limits = c(bot, top)) +
+  labs(title = "Pulse oximetry distribution for all patients",
+       x = "Pulse oximetry",
+       y = 'Value [%]')
+
+hr_g + sp_g + plot_layout(ncol = 2, guides = "collect") + 
+  plot_annotation(
+    title = "Vital Signs",
+    caption = "Source: MIMIC-III v1.4"
+  )
+```
+
+## Exercise: Missing data imputation
+
+Aim: To impute missing data using several methods.
+
+There are several approaches for missing data imputation. Here we show how to impute missing data with packages available in R Studio.
+
+Before missing data imputation we must first remove outliers, so our imputation is performed based on values within the physiological ranges.
+
+First, select heart rate and pulse oximetry values in the same dataframe.
+
+```{r message=FALSE, warning=FALSE}
+hr_sp <- vitals %>% 
+  filter(
+    (((ITEMID == 211) | (ITEMID == 220045)) & (toupper(VALUEUOM) == "BPM")) |
+    (((ITEMID == 646) | (ITEMID == 220277)) & (VALUEUOM == "%"))
+  )
+```
+
+And recode as "NA" where values are outside the physiological ranges.  We also include a new variable `MEASURE` which quickly identifies whether the observation is for heart rate or pulse oximetry.  (This will be used to pivot the data frame wider - see below.)
+
+```{r message=FALSE, warning=FALSE}
+
+hr_sp <- hr_sp %>% 
+  mutate(
+    MEASURE = ifelse(((ITEMID == 211) | (ITEMID == 220045)), "HR", "SpO2"),
+    VALUENUM = ifelse((MEASURE == "HR") & 
+                      ((VALUENUM > 300) | (VALUENUM < 0)), NA_real_, VALUENUM),
+    VALUENUM = ifelse((MEASURE == "SpO2") & 
+                      ((VALUENUM > 100) | (VALUENUM < 80)), NA_real_, VALUENUM)
+  ) %>% 
+  select(SUBJECT_ID, HADM_ID, ICUSTAY_ID, CHARTTIME, VALUENUM, MEASURE) %>% 
+  pivot_wider(names_from = MEASURE, values_from = VALUENUM) %>% 
+  arrange(SUBJECT_ID, HADM_ID, ICUSTAY_ID, CHARTTIME)
+```
+
+### Imputation using the population median values
+
+We can directly impute the median of the population for each variable.
+
+```{r message=FALSE, warning=FALSE}
+med_hr_sp <- hr_sp %>% 
+  mutate(
+    HR = ifelse(is.na(HR), median(hr_sp$HR, na.rm = TRUE), HR),
+    SpO2 = ifelse(is.na(SpO2), median(hr_sp$SpO2, na.rm = TRUE), SpO2)
+  )
+```
+
+### Imputation with the Amelia package
+
+Let’s visualize and then impute the missing values with functions from the `Amelia` package - named after Amelia Earhart.
+
+We selected pulse oximetry and heart rate as examples, however this can be performed for all the variables. 
+
+Select 1 patient ICU stay as example for visualization.
+
+```{r message=FALSE, warning=FALSE}
+hr_sp %>% 
+  filter(ICUSTAY_ID == 210989) %>% 
+  select(HR, SpO2) %>%
+  missmap(main = "Missingness Map: heart rate (HR) & pulse oximetry (SpO2)",
+          y.labels = NULL,
+          y.at = NULL)
+```
+
+Now, impute missing data using the `Amelia` package. For the cases (correspondent to rows) where there is no value for heart rate or pulse oximetry, the value is not imputed. With a dataset containing higher amount of variables, we will not have so many of these cases. However, in the cases where we do not have any value we can proceed with eg. case deletion.
+
+The `amelia` function runs the bootstrap EM algorithm on incomplete data and creates imputed datasets.
+
+```{r message=FALSE, warning=FALSE}
+amelia_fit <- hr_sp %>% 
+  filter(!(is.na(HR) & is.na(SpO2))) %>% 
+  select(HR, SpO2) %>%
+  as.data.frame() %>% # data needs to be in a pure data frame or matrix form
+  amelia(parallel = "multicore")
+```
+
+### Analyze the imputed values
+
+We will analyze the imputed values created to understand if the imputation method was adequate. A common practice consists in comparing the distribution of the imputed values and of the observed values. Use the `compare.density` function from the `Amelia` package for this.
+
+For heart rate:
+
+```{r message=FALSE, warning=FALSE}
+compare.density(amelia_fit, var = "HR")
+```
+
+For pulse oximetry:
+
+```{r message=FALSE, warning=FALSE}
+compare.density(amelia_fit, var = "SpO2")
+```
+
+We observe that other methods should be applied in order to have a more fitted distribution of the data.
